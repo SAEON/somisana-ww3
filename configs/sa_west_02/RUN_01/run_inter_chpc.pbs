@@ -1,4 +1,12 @@
 #!/bin/bash
+#PBS -l select=5:ncpus=24:mpiprocs=24
+#PBS -P ERTH1103
+#PBS -q normal
+#PBS -l walltime=12:00:00
+#PBS -o /home/gfearon/stdout 
+#PBS -e /home/gfearon/stderr 
+
+cd /home/gfearon/lustre/somisana-ww3/configs/sa_west_02/RUN_01
 
 #unalias cp
 #unalias mv
@@ -102,8 +110,8 @@ while [ "$(date -d "$CURRENT_DATE" +%Y%m)" -le "$(date -d "$END_DATE" +%Y%m)" ];
     
     # move the output
     $MV ww3.$(date -d "$CURRENT_DATE" +%Y%m).nc ../output
-    $MV restart001.ww3 restart.ww3
-    $CP restart.ww3 ../output/restart.$(date -d "$CURRENT_DATE" +%Y%m).ww3
+    $MV restart001.ww3 restart.ww3 # ensure that next month gets restarted from this file
+    $CP restart.ww3 ../output/restart.$(date -d "$CURRENT_DATE" +%Y%m).ww3 # back up the restart file in case we want to restart from this month
 
     # Advance by one month
     CURRENT_DATE=$(date -d "$CURRENT_DATE +1 month" +%Y-%m-01)

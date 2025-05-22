@@ -142,7 +142,7 @@ def make_bry_spec_cmems(lon_file,
     
     with open(os.path.join(output_dir,"spec.list"), "w") as f:
         for lon, lat in matched_coords:
-            spec_file = os.path.join(output_dir,f"cmems.lon{lon:.2f}.lat{lat:.2f}.spec.nc")
+            spec_file = f"cmems.lon{lon:.2f}.lat{lat:.2f}.spec.nc"
             cmems_2_spec(cmems_file,
                                   lon,
                                   lat,
