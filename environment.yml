@@ -1,0 +1,6 @@
+name: wavespectra
+channels:
+  - conda-forge
+dependencies:
+  - wavespectra
+  - netCDF4
