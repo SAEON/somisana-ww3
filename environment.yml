@@ -4,3 +4,4 @@ channels:
 dependencies:
   - wavespectra
   - netCDF4
+  - cartopy>=0.20
