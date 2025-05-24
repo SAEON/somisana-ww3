@@ -154,9 +154,11 @@
   CURV%XCOORD%SF        =  1.0
   CURV%XCOORD%OFF       =  0.0
   CURV%XCOORD%FILENAME  =  'lon.dat'
+  CURV%XCOORD%IDLA      =  3
   CURV%YCOORD%SF        =  1.0
   CURV%YCOORD%OFF       =  0.0
   CURV%YCOORD%FILENAME  =  'lat.dat'
+  CURV%YCOORD%IDLA      =  3
 /
 
 ! -------------------------------------------------------------------- !
@@ -198,6 +200,7 @@
 &DEPTH_NML
   DEPTH%SF        =  1.0
   DEPTH%FILENAME  =  'depth.dat'
+  DEPTH%IDLA      =  3
 /
 
 ! -------------------------------------------------------------------- !
@@ -242,6 +245,7 @@
 ! -------------------------------------------------------------------- !
 &MASK_NML
   MASK%FILENAME  =  'mask.dat'
+  MASK%IDLA      =  3
 /
 
 ! -------------------------------------------------------------------- !
