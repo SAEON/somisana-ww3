@@ -4,7 +4,7 @@ This repo is part of the [SOMISANA](https://somisana.ac.za/) initiative, and use
 
 The python tools in `ww3_tools` require a suitable environment built off the [wavespectra](https://github.com/wavespectra/wavespectra) library. 
 
-To clone this repo to your local machine (do this wherever you would like the code):
+To use the tools, clone this repo to your local machine (do this wherever you would like the code):
 
 ```sh
 git clone git@github.com:SAEON/somisana-ww3.git

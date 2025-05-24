@@ -32,10 +32,10 @@ def croco_grd_2_ww3(croco_grdfile,
     mask[1:-1, -1] = np.where(mask[1:-1, -1] == 1, 2, mask[1:-1, -1])
 
     # write output files
-    np.savetxt(lon_out, lon, fmt='%.6f')
-    np.savetxt(lat_out, lat, fmt='%.6f')
-    np.savetxt(depth_out, h, fmt='%.3f')
-    np.savetxt(mask_out, mask, fmt="%d")
+    np.savetxt(lon_out, np.flip(lon, axis=0), fmt='%.6f')
+    np.savetxt(lat_out, np.flip(lat, axis=0), fmt='%.6f')
+    np.savetxt(depth_out, np.flip(h, axis=0), fmt='%.3f')
+    np.savetxt(mask_out, np.flip(mask, axis=0), fmt="%d")
 
 
 def gamma_from_tp(Tp, gamma_min=1.5, gamma_max=6.0, Tp_mid=9.0, k=0.8):
@@ -142,7 +142,7 @@ def make_bry_spec_cmems(lon_file,
     
     with open(os.path.join(output_dir,"spec.list"), "w") as f:
         for lon, lat in matched_coords:
-            spec_file = os.path.join(output_dir,f"cmems.lon{lon:.2f}.lat{lat:.2f}.spec.nc")
+            spec_file = f"cmems.lon{lon:.2f}.lat{lat:.2f}.spec.nc"
             cmems_2_spec(cmems_file,
                                   lon,
                                   lat,
@@ -313,9 +313,9 @@ def ncep_hind_2_spec():
 
 if __name__ == '__main__':
     
-    file_in='/mnt/c/Users/GilesF/Downloads/CMEMS_WAV/eez/2009_01.nc'
+    file_in='/home/gfearon/code/somisana-croco/DATASETS_CROCOTOOLS/CMEMS_WAV/eez/2010_01.nc'
     grid_dir='/home/gfearon/code/somisana-ww3/configs/sa_west_02/GRID/'
-    output_dir='/home/gfearon/code/somisana-ww3/configs/sa_west_02/SPEC_CMEMS/2009_01/'
+    output_dir='/home/gfearon/code/somisana-ww3/configs/sa_west_02/SPEC_CMEMS/2010_01/'
     make_bry_spec_cmems(grid_dir+'lon.dat',grid_dir+'lat.dat',grid_dir+'mask.dat',file_in,output_dir)
     
     

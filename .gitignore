@@ -13,6 +13,7 @@ spec.list
 *.out
 **/scratch
 **/output
+*postprocess*
 
 copy2chpc.bash
 *.swp
