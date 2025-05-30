@@ -146,7 +146,7 @@ def make_bry_spec_cmems(lon_file,
             cmems_2_spec(cmems_file,
                                   lon,
                                   lat,
-                                  spec_file,
+                                  os.path.join(output_dir,spec_file),
                                   num_freqs=num_freqs,
                                   start_freq=start_freq,
                                   freq_factor=freq_factor,
@@ -182,7 +182,14 @@ def cmems_2_spec(file_in,
       freq[i] = freq[i-1] * freq_factor
     
     # set up the direction axis of the wave spectrum
-    dir = np.linspace(0, 360, num_dirs, endpoint=False)
+    #dir = np.linspace(0, 360, num_dirs, endpoint=False)
+    #
+    # intentionally trying to mimic how the directions are done in ww3 native format
+    # i.e. first direction bin is waves heading due east, then moving counter-clockwise
+    start_dir=270 # direction from (in the .to_ww3() function it gets converted to 90 i.e. direction to)
+    dir_spacing=360/num_dirs
+    end_dir=start_dir-dir_spacing*(num_dirs-1)
+    dir=np.linspace(start_dir, end_dir, num_dirs) % 360
 
     # extract data for the specified lon,lat coordinate
     if isinstance(file_in, xr.Dataset): # handles the case of using an already extracted dataset as input
@@ -216,7 +223,7 @@ def cmems_2_spec(file_in,
     # spreading factor (standard deviation in the wave direction)
     # no spreading factor is provided with the partition data, so we need to use some estimate
     # Physically, lower period waves (higher frequencies) have higher spreading factors
-    # Allowing for a rough linear estimate:
+    # Allowing for a linear estimate:
     dspr = fp_2_dspr * fp
     
     # ideally gamma, the peakedness parameter should also vary with Tp
@@ -249,7 +256,15 @@ def cmems_2_spec(file_in,
     })
     # ds_efth['time'].encoding['unlimited_dims'] = ('time',)
     ds_efth['time'].attrs['units'] = 'hours since 1990-01-01'
-    ds_efth['time'].encoding['dtype'] = 'float64'
+    ds_efth['time'].encoding['dtype'] = 'float32'
+    
+    # make variables float 32
+    for var in ['lon','lat','freq','dir','efth']:
+        ds_efth[var] = ds_efth[var].astype('float32')
+    
+    # add the site name
+    site_name = f"{'E' if lon_out >= 0 else 'W'}{round(abs(lon_out)*10):04d}{'N' if lat_out >= 0 else 'S'}{round(abs(lat_out)*10):03d}"
+    ds_efth = ds_efth.assign_coords(site=("site", [site_name]))
     
     # make a specDataset object to get access to the built in functions to 
     # write spectral output files for specific models like WW3
@@ -261,7 +276,7 @@ def cmems_2_spec(file_in,
     ds.close()
     ds_efth.close()
     ds_spec.close()
-
+    
 def ncep_hind_2_spec():
     '''
     test function designed to work on NCEP's WW3 phase 2 hindcast wave partition output:
@@ -313,9 +328,9 @@ def ncep_hind_2_spec():
 
 if __name__ == '__main__':
     
-    file_in='/home/gfearon/code/somisana-croco/DATASETS_CROCOTOOLS/CMEMS_WAV/eez/2010_01.nc'
+    file_in='/home/gfearon/code/somisana-croco/DATASETS_CROCOTOOLS/CMEMS_WAV/eez/2010_05.nc'
     grid_dir='/home/gfearon/code/somisana-ww3/configs/sa_west_02/GRID/'
-    output_dir='/home/gfearon/code/somisana-ww3/configs/sa_west_02/SPEC_CMEMS/2010_01/'
+    output_dir='/home/gfearon/code/somisana-ww3/configs/sa_west_02/SPEC_CMEMS/2010_05/'
     make_bry_spec_cmems(grid_dir+'lon.dat',grid_dir+'lat.dat',grid_dir+'mask.dat',file_in,output_dir)
     
     
