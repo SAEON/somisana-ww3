@@ -32,10 +32,10 @@ def croco_grd_2_ww3(croco_grdfile,
     mask[1:-1, -1] = np.where(mask[1:-1, -1] == 1, 2, mask[1:-1, -1])
 
     # write output files
-    np.savetxt(lon_out, np.flip(lon, axis=0), fmt='%.6f')
-    np.savetxt(lat_out, np.flip(lat, axis=0), fmt='%.6f')
-    np.savetxt(depth_out, np.flip(h, axis=0), fmt='%.3f')
-    np.savetxt(mask_out, np.flip(mask, axis=0), fmt="%d")
+    np.savetxt(lon_out, lon, fmt='%.6f')
+    np.savetxt(lat_out, lat, fmt='%.6f')
+    np.savetxt(depth_out, h, fmt='%.3f')
+    np.savetxt(mask_out, mask, fmt="%d")
 
 
 def gamma_from_tp(Tp, gamma_min=1.5, gamma_max=6.0, Tp_mid=9.0, k=0.8):
