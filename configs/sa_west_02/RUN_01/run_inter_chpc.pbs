@@ -2,7 +2,7 @@
 #PBS -l select=5:ncpus=24:mpiprocs=24
 #PBS -P ERTH1103
 #PBS -q normal
-#PBS -l walltime=3:00:00
+#PBS -l walltime=15:00:00
 #PBS -o /home/gfearon/stdout 
 #PBS -e /home/gfearon/stderr 
 

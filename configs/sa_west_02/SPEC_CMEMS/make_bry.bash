@@ -9,5 +9,5 @@ python /home/$USER/code/somisana-ww3/cli.py make_bry_cmems_monthy \
 	--mask_file ../GRID/mask.dat \
 	--output_dir $PWD \
 	--month_start 2010-01 \
-	--month_end 2011-01 
+	--month_end 2010-12 
 

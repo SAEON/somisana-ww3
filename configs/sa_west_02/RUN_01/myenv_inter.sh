@@ -18,5 +18,5 @@ export SRF_DIR=/home/gfearon/lustre/DATA/ERA5/eez
 export MPI_NUM_PROCS=120
 
 # time period for interannual run
-MONTH_START="2010-05"
-MONTH_END="2010-05"
+MONTH_START="2010-01"
+MONTH_END="2010-12"
