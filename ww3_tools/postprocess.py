@@ -33,6 +33,19 @@ def get_ds_map(fname,
         ds=ds.sel(time=time)
     return ds
 
+def get_boundary(fname):
+    '''
+    Return lon,lat of perimeter around the curvilinear grid (i.e. coordinates of bounding cells)
+    '''
+    ds=get_ds_map(fname)
+    lon=ds.longitude.values
+    lat = ds.latitude.values
+    lon_out = np.hstack((lon[0:, 0], lon[-1, 1:-1],
+                     lon[-1::-1, -1], lon[0, -2::-1]))
+    lat_out = np.hstack((lat[0:, 0], lat[-1, 1:-1],
+                     lat[-1::-1, -1], lat[0, -2::-1]))
+    return lon_out, lat_out
+
 def find_nearest_point(ds, lon_ts, lat_ts):
     """
     Find the nearest indices of the model curvilinear grid to a specified lon, lat coordinate:
