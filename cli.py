@@ -117,7 +117,43 @@ def main():
             month_now=datetime(month_next.year, month_next.month, 1) # set month_now to the first day of the next month
         
     parser_make_bry_cmems_monthy.set_defaults(func=make_bry_cmems_monthy_handler)
-    
+
+    # ----------------------
+    # make_bry_cmems_fcst
+    # ----------------------
+    parser_make_bry_cmems_fcst = subparsers.add_parser('make_bry_cmems_fcst',
+            help='Make spectral boundary condition files for WW3 forecast from a single CMEMS wave data file')
+    parser_make_bry_cmems_fcst.add_argument('--input_file', required=True, type=str,
+            help='Path to CMEMS wave data file')
+    parser_make_bry_cmems_fcst.add_argument('--lon_file', required=True, type=str,
+            help='Path to longitude file in ww3 format')
+    parser_make_bry_cmems_fcst.add_argument('--lat_file', required=True, type=str,
+            help='Path to latitude file in ww3 format')
+    parser_make_bry_cmems_fcst.add_argument('--mask_file', required=True, type=str,
+            help='Path to mask file in ww3 format')
+    parser_make_bry_cmems_fcst.add_argument('--output_dir', required=True, type=str,
+            help='Path to where the spectral boundary files will be saved')
+    def make_bry_cmems_fcst_handler(args):
+
+        cmems_ds = xr.open_dataset(args.input_file)
+
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
+        warnings.filterwarnings("ignore", message=".*", category=UserWarning, module="wavespectra.output.ww3")
+        make_bry_spec_cmems(args.lon_file,
+                                args.lat_file,
+                                args.mask_file,
+                                cmems_ds,
+                                args.output_dir,
+                                num_freqs=32,
+                                start_freq=0.0373,
+                                freq_factor=1.1,
+                                num_dirs=24,
+                                fp_2_dspr = 120,
+                                )
+        cmems_ds.close()
+
+    parser_make_bry_cmems_fcst.set_defaults(func=make_bry_cmems_fcst_handler)
+
     args = parser.parse_args()
     if hasattr(args, 'func'):
         args.func(args)
