@@ -405,8 +405,93 @@ def plot(fname,
             print('writing '+mp4_out)
             anim.save(mp4_out, writer="ffmpeg")
 
+def plot_grid(grid_dir,
+              lon_file='lon.dat',
+              lat_file='lat.dat',
+              depth_file='depth.dat',
+              mask_file='mask.dat',
+              ax=None,
+              ticks=None,
+              cmap='Blues',
+              extents=None,
+              add_cbar=True,
+              cbar_label='Depth (m)',
+              cbar_loc=None,
+              lscale='h',
+              land_color=('k', 0),
+              jpg_out=None):
+    '''
+    Plot WW3 model grid bathymetry from .dat files in a WW3 grid directory.
+
+    Parameters
+    ----------
+    grid_dir : str
+        Path to directory containing the grid .dat files.
+    lon_file, lat_file, depth_file, mask_file : str
+        Filenames for longitude, latitude, depth, and mask arrays.
+    extents : list, optional
+        [lon_min, lon_max, lat_min, lat_max]. If None, derived from grid.
+
+    Returns
+    -------
+    ax : matplotlib axes object for further overlay.
+    '''
+    from pathlib import Path
+    grid_dir = Path(grid_dir)
+    lon = np.loadtxt(grid_dir / lon_file)
+    lat = np.loadtxt(grid_dir / lat_file)
+    depth = np.abs(np.loadtxt(grid_dir / depth_file))
+    mask = np.loadtxt(grid_dir / mask_file, dtype=int)
+    # mask out land/boundary (keep only sea points where mask==1)
+    depth = np.where(mask == 1, depth, np.nan)
+
+    if extents is None:
+        dl = 0.5
+        extents = [lon.min() - dl, lon.max() + dl,
+                   lat.min() - dl, lat.max() + dl]
+
+    proj = ccrs.Mercator()
+    x0, y0 = proj.transform_point(extents[0], extents[2], ccrs.PlateCarree())
+    x1, y1 = proj.transform_point(extents[1], extents[3], ccrs.PlateCarree())
+    aspect_ratio = abs(x1 - x0) / abs(y1 - y0)
+
+    if ax is None:
+        if aspect_ratio > 1:
+            fig_width = 6 * aspect_ratio
+            fig_height = 6
+        else:
+            fig_width = 6
+            fig_height = 6 / aspect_ratio
+        buffer_left = 0.1 * fig_width
+        buffer_right = 0.2 * fig_width if add_cbar else 0.1 * fig_width
+        figsize = (buffer_left + fig_width + buffer_right, fig_height)
+        fig = plt.figure(figsize=figsize)
+        width = 0.7 if add_cbar else 0.8
+        ax = fig.add_axes([0.1, 0.1, width, 0.8], projection=proj)
+
+    setup_plot(ax, extents=extents, land_color=land_color, lscale=lscale)
+
+    if ticks is None:
+        # use depth within the current extents for tick range
+        in_ext = ((lon >= extents[0]) & (lon <= extents[1]) &
+                  (lat >= extents[2]) & (lat <= extents[3]))
+        depth_sub = depth[in_ext]
+        vmin = np.nanpercentile(depth_sub, 1)
+        vmax = np.nanpercentile(depth_sub, 99)
+        ticks = np.linspace(vmin, vmax, 11)
+
+    var_plt = plot_var(ax, depth, lon, lat, ticks=ticks, cmap=cmap)
+
+    if add_cbar:
+        plot_cbar(ax, var_plt, label=cbar_label, ticks=ticks, loc=cbar_loc)
+
+    if jpg_out is not None:
+        plt.savefig(jpg_out, dpi=500, bbox_inches='tight')
+
+    return ax
+
 if __name__ == "__main__":
-    
+
     fname='/home/gfearon/code/somisana-ww3/configs/sa_west_02/RUN_01/output/ww3.20101*.nc'
     plot(fname,time=1200)
     
