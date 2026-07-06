@@ -100,7 +100,7 @@
 !
 ! -------------------------------------------------------------------- !
 &OUTPUT_TYPE_NML
-  TYPE%FIELD%LIST          = 'HS FP DIR DP CHA UST DPT CUR WND'
+  TYPE%FIELD%LIST          = 'HS FP DIR DP SPR'
 /
 
 ! -------------------------------------------------------------------- !

@@ -1,4 +1,13 @@
 #!/bin/bash
+#PBS -l select=5:ncpus=24:mpiprocs=24
+#PBS -P ERTH1103
+#PBS -q normal
+#PBS -l walltime=24:00:00
+#PBS -o /home/gfearon/lustre/somisana-ww3/configs/sa_west_02/RUN_01/stdout
+#PBS -e /home/gfearon/lustre/somisana-ww3/configs/sa_west_02/RUN_01/stderr
+#PBS -v MONTH_START,MONTH_END,RSTFLAG
+
+cd /home/gfearon/lustre/somisana-ww3/configs/sa_west_02/RUN_01
 
 #unalias cp
 #unalias mv
@@ -7,13 +16,6 @@ CP=/bin/cp
 MV=/bin/mv
 LN=/bin/ln
 MK=/bin/mkdir
-
-# time period for interannual run
-MONTH_START="2008-12"
-MONTH_END="2013-12"
-
-# restart from previous run (1) or cold start (0)
-RSTFLAG=0
 
 # read in the environment variables
 source myenv_inter.sh

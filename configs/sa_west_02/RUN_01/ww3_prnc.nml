@@ -66,10 +66,10 @@
 ! -------------------------------------------------------------------- !
 &FILE_NML
   FILE%FILENAME      = 'wind.nc'
-  FILE%LONGITUDE     = 'longitude'
-  FILE%LATITUDE      = 'latitude'
-  FILE%VAR(1)        = 'u10'
-  FILE%VAR(2)        = 'v10'
+  FILE%LONGITUDE     = 'lon'
+  FILE%LATITUDE      = 'lat'
+  FILE%VAR(1)        = 'U10M'
+  FILE%VAR(2)        = 'V10M'
 /
 
 
