@@ -49,25 +49,34 @@ def get_boundary(fname):
 
 def find_nearest_point(ds, lon_ts, lat_ts):
     """
-    Find the nearest indices of the model curvilinear grid to a specified lon, lat coordinate:
+    Find the nearest indices of the model curvilinear grid to a specified lon, lat coordinate.
+
+    If the dataset carries a MAPSTA mask, only active sea cells
+    (MAPSTA == 1) are considered, so a request very close to a coast
+    returns the nearest wet point rather than a dry cell with junk
+    values.
 
     Returns:
     - j :the nearest y index
     - i :the nearest x index
-    
+
     j,i can be used in xarrays built-in xr.isel() function to extract data at this grid point
-    
+
     """
-    
+
     lon = ds.longitude.values
     lat = ds.latitude.values
-    
+
     # Calculate the distance between (lon_ts, lat_ts) and all grid points
     distance = ((lon - lon_ts) ** 2 +
                 (lat - lat_ts) ** 2) ** 0.5
-    
+
+    # Restrict the search to active sea cells if a MAPSTA mask is present.
+    if 'MAPSTA' in ds:
+        distance = np.where(ds['MAPSTA'].values == 1, distance, np.inf)
+
     # Find the indices of the minimum distance
-    # unravel_index method Converts a flat index or array of flat indices into a tuple of coordinate 
+    # unravel_index method Converts a flat index or array of flat indices into a tuple of coordinate
     # arrays: https://numpy.org/doc/stable/reference/generated/numpy.unravel_index.html
     min_index = np.unravel_index(distance.argmin(), distance.shape)
 
