@@ -20,9 +20,15 @@ import numpy as np
 import xarray as xr
 from dask import delayed
 from scipy.interpolate import griddata
+from scipy.spatial import Delaunay
 
 
 DEFAULT_VARS = ['hs', 't0m1', 'dir', 'dp']
+
+# Wave directions, in degrees. These are circular and must not be interpolated
+# as plain scalars: a linear blend of 350 and 10 gives 180 — the opposite
+# direction. They are interpolated via their unit-vector components instead.
+DIRECTIONAL_VARS = ('dir', 'dp')
 
 
 def _zarr_compressor_encoding(chunks):
@@ -134,26 +140,73 @@ def regrid_tier3(fname_in, dir_out, spacing=0.01, varList=DEFAULT_VARS,
                 if poly.contains_point((lon_grd[y, x], lat_grd[y, x])):
                     mask_out[y, x] = 1.0
 
+        # Exclude land from the output grid. The boundary polygon above only
+        # clips to the domain's outer edge, so land inside it would otherwise
+        # be filled by interpolation across the coastline. Nearest-interpolate
+        # the native land/sea mask (all cells, wet=1 / dry=0) onto the output
+        # grid and fold dry cells into mask_out so they become NaN in the
+        # `* mask_out / mask_out` step.
+        wet_out = griddata(
+            np.column_stack([lon_2d.ravel(), lat_2d.ravel()]),
+            wet.ravel().astype(float),
+            (lon_grd, lat_grd), method='nearest',
+        )
+        mask_out = mask_out * (wet_out > 0.5)
+
         # Source points restricted to wet cells
         wet_flat = wet.ravel()
         lonlat_input = np.column_stack(
             [lon_2d.ravel()[wet_flat], lat_2d.ravel()[wet_flat]]
         )
 
+        # Precompute the Delaunay triangulation and barycentric weights ONCE.
+        # The source mesh and the output points are identical for every
+        # (time, variable) tile, so the expensive triangulation and per-point
+        # simplex lookup are hoisted out of the per-chunk loop — each field
+        # then collapses to a gather + weighted sum. Same idiom as
+        # crocotools_py.regridding.regrid_tier3.
+        #
+        # Linear (rather than nearest) matters here: the source grid is much
+        # coarser than the output, so nearest-neighbour paints Voronoi wedges
+        # and leaves radial streaks fanning out to the domain edge. Linear
+        # returns NaN outside the convex hull of the wet points instead.
+        xi_flat = np.column_stack([lon_grd.ravel(), lat_grd.ravel()])
+        tri = Delaunay(lonlat_input)
+        simplex = tri.find_simplex(xi_flat)          # -1 outside the hull
+        valid = simplex >= 0
+        safe_simplex = np.where(valid, simplex, 0)
+        vtx = tri.simplices[safe_simplex]            # (Nout, 3)
+        T = tri.transform[safe_simplex]              # (Nout, 3, 2)
+        delta = xi_flat - T[:, 2, :]
+        bary = np.einsum('nij,nj->ni', T[:, :2, :], delta)
+        weights = np.column_stack([bary, 1.0 - bary.sum(axis=1)])
+        weights[~valid] = 0.0
+        valid_2d = valid.reshape(Nlat, Nlon)
+
+        def _interp(values_flat):
+            gathered = values_flat[vtx]              # (Nout, 3)
+            out = np.einsum('ni,ni->n', gathered, weights).reshape(Nlat, Nlon)
+            return np.where(valid_2d, out, np.nan)
+
         @delayed
-        def compute_2d_chunk(t, variable, method='nearest'):
+        def compute_2d_chunk(t, variable, circular=False):
             vals = np.asarray(variable[t]).ravel()[wet_flat]
-            return (
-                griddata(lonlat_input, vals, (lon_grd, lat_grd), method)
-                * mask_out / mask_out
-            )
+            if circular:
+                rad = np.deg2rad(vals)
+                out = np.rad2deg(
+                    np.arctan2(_interp(np.sin(rad)), _interp(np.cos(rad)))
+                ) % 360.0
+            else:
+                out = _interp(vals)
+            return out * mask_out / mask_out
 
         out_time = {v: [] for v in active_vars}
         for t in range(Nt):
             for v in active_vars:
                 out_time[v].append(
                     da.from_delayed(
-                        compute_2d_chunk(t, ds[v].values),
+                        compute_2d_chunk(t, ds[v].values,
+                                         circular=v in DIRECTIONAL_VARS),
                         shape=(Nlat, Nlon),
                         dtype=float,
                     )
