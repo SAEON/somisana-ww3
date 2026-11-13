@@ -28,7 +28,7 @@
   FIELD%TIMESTRIDE       = '1'
   FIELD%TIMECOUNT        = '1000000000'
   FIELD%TIMESPLIT        = 6
-  FIELD%LIST             = 'HS FP DIR DP SPR'
+  FIELD%LIST             = 'HS FP DIR DP SPR T0M1 LM USS TUS BHD TWO TAW FOC UBR'
 /
 
 ! -------------------------------------------------------------------- !

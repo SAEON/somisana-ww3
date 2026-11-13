@@ -100,7 +100,7 @@
 !
 ! -------------------------------------------------------------------- !
 &OUTPUT_TYPE_NML
-  TYPE%FIELD%LIST          = 'HS FP DIR DP SPR'
+  TYPE%FIELD%LIST          = 'HS FP DIR DP SPR T0M1 LM USS TUS BHD TWO TAW FOC UBR'
 /
 
 ! -------------------------------------------------------------------- !
