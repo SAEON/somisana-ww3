@@ -2,7 +2,7 @@
 #PBS -l select=5:ncpus=24:mpiprocs=24
 #PBS -P ERTH1103
 #PBS -q normal
-#PBS -l walltime=24:00:00
+#PBS -l walltime=16:00:00
 #PBS -o /home/gfearon/lustre/somisana-ww3/configs/sa_west_02/RUN_01/stdout
 #PBS -e /home/gfearon/lustre/somisana-ww3/configs/sa_west_02/RUN_01/stderr
 #PBS -v MONTH_START,MONTH_END,RSTFLAG
@@ -16,6 +16,13 @@ CP=/bin/cp
 MV=/bin/mv
 LN=/bin/ln
 MK=/bin/mkdir
+
+# abort the job with a non-zero exit code so that dependent jobs (afterok) don't start
+# this prevents failed months cascading through the chain and overwriting restart backups
+fail() {
+  echo "ERROR: $1"
+  exit 1
+}
 
 # read in the environment variables
 source myenv_inter.sh
@@ -52,10 +59,11 @@ $CP $RUN_DIR/ww3_ounf.nml ww3_ounf_template.nml
 # WW3 restart file
 if [[ $RSTFLAG == 0 ]]; then
   echo "using a cold start for WW3"
+  rm -f $RUN_DIR/scratch/restart.ww3 # ensure no stale restart file from a previous run gets picked up
 else
   WW3_RSTFILE=ww3_rst_$(date -d "$MONTH_START-01 -1 month" +%Y_%m).ww3
   echo "Getting ${WW3_RSTFILE} from $RUN_DIR/output"
-  $CP $RUN_DIR/output/${WW3_RSTFILE} $RUN_DIR/scratch/restart.ww3
+  $CP $RUN_DIR/output/${WW3_RSTFILE} $RUN_DIR/scratch/restart.ww3 || fail "could not copy restart file ${WW3_RSTFILE}"
 fi
 
 CURRENT_DATE="${MONTH_START}-01"
@@ -80,7 +88,9 @@ while [ "$(date -d "$CURRENT_DATE" +%Y%m)" -le "$(date -d "$END_DATE" +%Y%m)" ];
     #$CP $BRY_DIR/$MONTH_NOW/spec.list .
     # we need to add the path to the spec.list file to every line in the spec.list file so that the file names contain the absolute paths
     sed 's|^|'$BRY_DIR/$MONTH_NOW/'|' $BRY_DIR/$MONTH_NOW/spec.list > spec.list
+    rm -f nest.ww3
     ./ww3_bounc | tee ww3_bounc_$MONTH_NOW.out
+    [ -s nest.ww3 ] || fail "ww3_bounc did not produce nest.ww3 for $MONTH_NOW"
 
     # create the surface forcing
     # using the CROCO-reformatted ERA5 files, as these are easier to work with than the raw ERA5 files
@@ -94,6 +104,9 @@ while [ "$(date -d "$CURRENT_DATE" +%Y%m)" -le "$(date -d "$END_DATE" +%Y%m)" ];
     #
     rm -f wind*
     echo 'combine U10M and V10M into a single wind.nc file'
+    for f in $ufile $vfile $ufile_next $vfile_next; do
+        [ -f $f ] || fail "wind file $f not found"
+    done
     $CP $ufile wind.nc
     ncks -A $vfile wind.nc
     echo 'extract and append first timestep of next month for full coverage'
@@ -110,17 +123,24 @@ while [ "$(date -d "$CURRENT_DATE" +%Y%m)" -le "$(date -d "$END_DATE" +%Y%m)" ];
     ncatted -O -a calendar,time,c,c,"standard" wind.nc
     echo 'run ww3_prnc'
     ./ww3_prnc | tee ww3_prnc_$MONTH_NOW.out
+    grep -q "WAVEWATCH III ERROR" ww3_prnc_$MONTH_NOW.out && fail "ww3_prnc failed for $MONTH_NOW"
 
     # run the model
     sed -e 's/YMD_FIRSTDAY/'$YMD_FIRSTDAY'/g' -e 's/YMD_NEXT_FIRSTDAY/'$YMD_NEXT_FIRSTDAY'/g' -e 's/YMD_LASTDAY/'$YMD_LASTDAY'/g' < ww3_shel_template.nml > ww3_shel.nml
+    rm -f restart001.ww3
     mpirun -np $MPI_NUM_PROCS ./ww3_shel >& ww3_shel_$MONTH_NOW.out
+    grep -q -E "WAVEWATCH III ERROR|MPI_ABORT" ww3_shel_$MONTH_NOW.out && fail "ww3_shel failed for $MONTH_NOW"
+    [ -s restart001.ww3 ] || fail "ww3_shel did not produce restart001.ww3 for $MONTH_NOW"
 
     # create netcdf from the ww3 binary files
     sed -e 's/YMD_FIRSTDAY/'$YMD_FIRSTDAY'/g' < ww3_ounf_template.nml > ww3_ounf.nml
+    OUNF_FILE=ww3.$(date -d "$CURRENT_DATE" +%Y%m).nc
+    rm -f $OUNF_FILE
     ./ww3_ounf | tee ww3_ounf_$MONTH_NOW.out
+    [ -s $OUNF_FILE ] || fail "ww3_ounf did not produce $OUNF_FILE for $MONTH_NOW"
 
     # move the output
-    $MV ww3.$(date -d "$CURRENT_DATE" +%Y%m).nc ../output/ww3_ounf_${MONTH_NOW}.nc
+    $MV $OUNF_FILE ../output/ww3_ounf_${MONTH_NOW}.nc
     $MV restart001.ww3 restart.ww3 # ensure that next month gets restarted from this file
     $CP restart.ww3 ../output/ww3_rst_${MONTH_NOW}.ww3 # back up the restart file in case we want to restart from this month
 
