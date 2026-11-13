@@ -85,8 +85,8 @@ while [ "$(date -d "$CURRENT_DATE" +%Y%m)" -le "$(date -d "$END_DATE" +%Y%m)" ];
     # create the surface forcing
     # using the CROCO-reformatted ERA5 files, as these are easier to work with than the raw ERA5 files
     # Specifically, this avoids having to use ncrename which has a bug that corrupts int64 time data
-    MONTH_NOW_ERA5=$(date -d "$CURRENT_DATE" +Y%YM%-m)
-    MONTH_NEXT_ERA5=$(date -d "$CURRENT_DATE +1 month" +Y%YM%-m)
+    MONTH_NOW_ERA5=$(date -d "$CURRENT_DATE" +Y%YM%m)
+    MONTH_NEXT_ERA5=$(date -d "$CURRENT_DATE +1 month" +Y%YM%m)
     ufile=$SRF_DIR/U10M_$MONTH_NOW_ERA5.nc
     vfile=$SRF_DIR/V10M_$MONTH_NOW_ERA5.nc
     ufile_next=$SRF_DIR/U10M_$MONTH_NEXT_ERA5.nc
